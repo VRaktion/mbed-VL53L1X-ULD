@@ -60,7 +60,7 @@
 /* Includes */
 #include "VL53L1X.h"
 
-// #define DEBUG_MODE
+//#define DEBUG_MODE
 
 const uint8_t VL51L1X_DEFAULT_CONFIGURATION[] = {
     0x00, /* 0x2d : set bit 2 and 5 to 1 for fast plus mode (1MHz I2C), else
@@ -176,13 +176,13 @@ static const uint8_t status_rtn[24] = {255, 255, 255, 5,   2,   4,   1,   7,
 
 /** Constructor
  * @param[in] &i2c device I2C to be used for communication
- * @param[in] &pin gpio0 Mbed InterruptIn PinName to be used as component
+ * @param[in] &pin xshut Mbed InterruptIn PinName to be used as component
  * @param[in] &pin_gpio1 gpio1 Mbed InterruptIn PinName to be used as component
  * GPIO_1 INT
  * @param[in] DevAddr device address, 0x52 by default
  */
-VL53L1X::VL53L1X(I2C *i2c, PinName pin_gpio0, PinName pin_gpio1)
-    : dev_i2c(i2c), gpio0(new DigitalOut(pin_gpio0)),
+VL53L1X::VL53L1X(I2C *i2c, PinName pin_xshut, PinName pin_gpio1)
+    : dev_i2c(i2c), xshut(new DigitalOut(pin_xshut)),
       gpio1Int(new InterruptIn(pin_gpio1)), i2cAddress(DEFAULT_DEVICE_ADDRESS) {
 }
 
@@ -196,6 +196,16 @@ void VL53L1X::EnableInterrupt() {
     gpio1Int->rise(0);
     gpio1Int->fall(callback(this, &VL53L1X::isr));
   }
+}
+
+void VL53L1X::WakeUp(void) {
+    MBED_ASSERT(xshut->is_connected());
+    xshut->write(1);
+}
+
+void VL53L1X::SetToSleep(void) {
+    MBED_ASSERT(xshut->is_connected());
+    xshut->write(0);
 }
 
 void VL53L1X::SetInterruptCallback(Callback<void(uint16_t, uint8_t)> cbFct) {
@@ -263,6 +273,9 @@ int8_t VL53L1X::SensorInit() {
 
   /// VVV POSTINIT VVV///
   status = VL53L1X::StartRanging();
+  #ifdef DEBUG_MODE
+  printf("[VL53L1X] Start Ranging status %d\r\n", status);
+  #endif
   tmp = 0;
   while (tmp == 0) {
     status = VL53L1X::CheckForDataReady(&tmp);
@@ -1005,10 +1018,10 @@ int8_t VL53L1X::UpdateByte(uint16_t index, uint8_t AndData, uint8_t OrData) {
 int8_t VL53L1X::I2CWrite(uint8_t DeviceAddr, uint16_t RegisterAddr,
                          uint8_t *pBuffer, uint16_t NumByteToWrite) {
 #ifdef DEBUG_MODE
-  printf("[VL53L1X] Beginning transmission to %x\r\n", DeviceAddr);
+  //printf("[VL53L1X] Beginning transmission to %x\r\n", DeviceAddr);
 #endif
 #ifdef DEBUG_MODE
-  printf("[VL53L1X] Writing port number %x\r\n", RegisterAddr);
+  //printf("[VL53L1X] Writing port number %x\r\n", RegisterAddr);
 #endif
   uint8_t buffer[NumByteToWrite + 2];
   buffer[0] = RegisterAddr >> 8;
@@ -1021,7 +1034,7 @@ int8_t VL53L1X::I2CWrite(uint8_t DeviceAddr, uint16_t RegisterAddr,
 
   if (result) {
 #ifdef DEBUG_MODE
-    printf("[VL53L1X] I2C WRITE: writing failed %x\r\n", DeviceAddr);
+    printf("[VL53L1X] I2C WRITE: writing failed %x, %x\r\n", DeviceAddr, RegisterAddr);
 #endif
   }
 
@@ -1036,10 +1049,10 @@ int8_t VL53L1X::I2CRead(uint8_t DeviceAddr, uint16_t RegisterAddr,
 // for (uint8_t x = 0; x < maxAttempts; x++)
 // {
 #ifdef DEBUG_MODE
-  printf("[VL53L1X] Beginning transmission to %x\r\n", DeviceAddr);
+  //printf("[VL53L1X] Beginning transmission to %x\r\n", DeviceAddr);
 #endif
 #ifdef DEBUG_MODE
-  printf("[VL53L1X] Writing port number %x\r\n", RegisterAddr);
+  //printf("[VL53L1X] Writing port number %x\r\n", RegisterAddr);
 #endif
 
   uint8_t buffer[2];
@@ -1059,7 +1072,7 @@ int8_t VL53L1X::I2CRead(uint8_t DeviceAddr, uint16_t RegisterAddr,
 
   if (result) {
 #ifdef DEBUG_MODE
-    printf("[VL53L1X] I2C READ: reading failed %x\r\n", DeviceAddr);
+    printf("[VL53L1X] I2C READ: reading failed %x, %x\r\n", DeviceAddr, RegisterAddr);
 #endif
   }
 

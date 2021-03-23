@@ -194,7 +194,7 @@ public:
    * component GPIO_1 INT
    * @param[in] DevAddr device address, 0x52 by default
    */
-  VL53L1X(I2C *i2c, PinName pin_gpio0 = NC, PinName pin_gpio1 = NC);
+  VL53L1X(I2C *i2c, PinName pin_xshut = NC, PinName pin_gpio1 = NC);
 
   /**
    * @brief This function returns the SW driver version
@@ -218,6 +218,7 @@ public:
   int8_t SensorInit1();
 
   void EnableInterrupt();
+  //void EnableInterruptXshutControlledByHost();
 
   int8_t SensorReset();
 
@@ -517,8 +518,13 @@ public:
 
   void SetRangeStatusFilter(RangeStatus rangingStatus);
 
+  void WakeUp (void);
+
+  void SetToSleep (void);
+
 private:
   void isr();
+  //void isrXshutControlledByHost();
   /* Write and read functions from I2C */
 
   int8_t WrByte(uint16_t index, uint8_t data);
@@ -542,7 +548,7 @@ private:
   /* IO Device */
   I2C *dev_i2c;
   /* Digital out pin */
-  DigitalOut *gpio0;
+  DigitalOut *xshut;
   InterruptIn *gpio1Int;
 
   uint16_t distanceBuffer = 0;
