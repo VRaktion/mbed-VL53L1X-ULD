@@ -218,7 +218,6 @@ public:
   int8_t SensorInit1();
 
   void EnableInterrupt();
-  //void EnableInterruptXshutControlledByHost();
 
   int8_t SensorReset();
 
@@ -524,7 +523,6 @@ public:
 
 private:
   void isr();
-  //void isrXshutControlledByHost();
   /* Write and read functions from I2C */
 
   int8_t WrByte(uint16_t index, uint8_t data);
